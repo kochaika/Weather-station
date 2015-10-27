@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -13,9 +13,20 @@ namespace NetduinoStation
     {
         public static void Main()
         {
-            // write your code here
 
+            OutputPort onboardLed = new OutputPort(Pins.ONBOARD_LED, false);
+            InputPort inputButton = new InputPort(Pins.ONBOARD_BTN,false, ResistorModes.Disabled);
+ 
 
+            while (true)
+            {
+                if (inputButton.Read())
+                {
+                    onboardLed.Write(true);
+                    Thread.Sleep(1000);
+                    onboardLed.Write(false);
+                }
+            } 
         }
 
     }
