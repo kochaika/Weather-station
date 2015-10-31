@@ -13,7 +13,7 @@ namespace NetduinoStation
     {
         public static void Main()
         {
-
+            
             OutputPort onboardLed = new OutputPort(Pins.ONBOARD_LED, false);
             InputPort inputButton = new InputPort(Pins.ONBOARD_BTN,false, ResistorModes.Disabled);
  
