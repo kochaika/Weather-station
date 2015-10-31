@@ -5,7 +5,7 @@
 <head runat="server">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta charset="utf-8" />
-    <title><%: Page.Title %> — мое приложение ASP.NET</title>
+    <title><%: Page.Title %> — MDP</title>
     <asp:PlaceHolder runat="server">     
           <%: Scripts.Render("~/bundles/modernizr") %>
     </asp:PlaceHolder>  
@@ -41,17 +41,18 @@
         <div class="content-wrapper">
             <div class="float-left">
                 <p class="site-title">
-                    <a runat="server" href="~/">ваша эмблема здесь</a>
+                    <a runat="server" href="~/"><img src="images/weather.png" width="90" height="90" alt="Пример"></a>
                 </p>
             </div>
             <div class="float-right">
-                <section id="login">
+               <!-- <section id="login">
                     <asp:LoginView runat="server" ViewStateMode="Disabled">
                         <AnonymousTemplate>
                             <ul>
                                 <li><a id="registerLink" runat="server" href="~/Account/Register">Зарегистрироваться</a></li>
                                 <li><a id="loginLink" runat="server" href="~/Account/Login">Вход</a></li>
                             </ul>
+                           
                         </AnonymousTemplate>
                         <LoggedInTemplate>
                             <p>
@@ -61,7 +62,7 @@
                             </p>
                         </LoggedInTemplate>
                     </asp:LoginView>
-                </section>
+                </section> -->
                 <nav>
                     <ul id="menu">
                         <li><a runat="server" href="~/">Домашняя</a></li>
@@ -81,7 +82,7 @@
     <footer>
         <div class="content-wrapper">
             <div class="float-left">
-                <p>&copy; <%: DateTime.Now.Year %> - мое приложение ASP.NET</p>
+                <p>&copy; <%: DateTime.Now.Year %> - MDP 2015</p>
             </div>
         </div>
     </footer>
