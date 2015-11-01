@@ -14,6 +14,9 @@ namespace NetduinoStation
         public static void Main()
         {
 
+	    //NistTime nist = new NistTime();
+            //DateTime datetime = nist.getDateTime(3);
+
             Thread.Sleep(1000);
             var prog = new WirelessTransmitter();
             prog.Start();
