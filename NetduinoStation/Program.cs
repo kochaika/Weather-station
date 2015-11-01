@@ -19,6 +19,10 @@ namespace NetduinoStation
             var interf = Microsoft.SPOT.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()[0];
             interf.EnableStaticIP("172.18.4.26", "255.255.244.0", "172.18.0.1");
             //interf.EnableDhcp();
+
+	    //NistTime nist = new NistTime();
+            //DateTime datetime = nist.getDateTime(3);
+
             Thread.Sleep(1000);
             //var prog = new WirelessTransmitter();
             //prog.Start();
