@@ -79,7 +79,7 @@ namespace HttpLibrary
         {
             get { return SERVER_THREAD; }
         }
-        private enum FileType { JPEG = 1, GIF=2, Html = 3 };
+        private enum FileType { JPEG = 1, GIF=2, Html = 3, CSS = 4, PNG = 5 };
 
         /// <summary>
         /// event fired when an error occurs
@@ -98,9 +98,18 @@ namespace HttpLibrary
         {
             byte[] HEADER;
             long FILE_LENGTH;
-            FILE_STREAM = new FileStream(FILE_NAME, FileMode.Open, FileAccess.Read);
-            FILE_READER = new StreamReader(FILE_STREAM);
-            FILE_LENGTH = FILE_STREAM.Length;
+            try
+            {
+                FILE_STREAM = new FileStream(STORAGE_PATH + "\\" + FILE_NAME, FileMode.Open, FileAccess.Read);
+                FILE_READER = new StreamReader(FILE_STREAM);
+                FILE_LENGTH = FILE_STREAM.Length;
+            }
+            catch (IOException)
+            {
+                Debug.Print("OoopsFile:   " + STORAGE_PATH + "\\" + FILE_NAME);
+                return;
+            }
+            
 
             switch (Type)
             {
@@ -112,6 +121,13 @@ namespace HttpLibrary
                     break;
                 case FileType.JPEG:
                     HEADER = UTF8Encoding.UTF8.GetBytes(HtmlPageHeader + "image/jpeg" + "; charset=utf-8\r\nContent-Length: " + FILE_LENGTH.ToString() + "\r\n\r\n");
+                    break;
+                case FileType.CSS:
+                    HEADER = UTF8Encoding.UTF8.GetBytes(HtmlPageHeader + "text/css" + "; charset=utf-8\r\nContent-Length: " + FILE_LENGTH.ToString() + "\r\n\r\n");
+                    break;
+                case FileType.PNG:
+                    HEADER = UTF8Encoding.UTF8.GetBytes(HtmlPageHeader + "image/png" + "; charset=utf-8\r\nContent-Length: " + FILE_LENGTH.ToString() + "\r\n\r\n");
+                    Debug.Print(HtmlPageHeader + "image/png" + "; charset=utf-8\r\nContent-Length: " + FILE_LENGTH.ToString());
                     break;
                 default:
                     HEADER = UTF8Encoding.UTF8.GetBytes(HtmlPageHeader + "text/html" + "; charset=utf-8\r\nContent-Length: " + FILE_LENGTH.ToString() + "\r\n\r\n");
@@ -173,18 +189,6 @@ namespace HttpLibrary
             FILE_WRITER.Close();
             FILE_STREAM.Close();
         }
-        private bool IsFileFound(ref string FILE_NAME, string[] FILES)
-        {
-            foreach (string F in FILES)
-            {
-                if (RequestContains(F.ToLower(), FILE_NAME.ToLower()))
-                {
-                    FILE_NAME = F;
-                    return true;
-                }
-            }
-            return false;
-        }
 
         private string GetFileExtention(string FILE_NAME)
         {
@@ -194,23 +198,41 @@ namespace HttpLibrary
         }
         private void ProcessRequest()
         {
-            
+            bool exist = false;
+            string filename = "";
             string[] FILES;
             string REQUEST = "";
             string FILE_NAME = "";
             string FILE_EXTENTION = "";
             ACCEPTED_SOCKET.Receive(RECEIVE_BUFFER);
             REQUEST = new string(UTF8Encoding.UTF8.GetChars(RECEIVE_BUFFER));
+            Debug.Print("\n\n\n"+REQUEST);
             FILES = Directory.GetFiles(STORAGE_PATH);
-            FILE_NAME = GetFileName(REQUEST);
+            FILE_NAME = GetFileName(REQUEST).ToLower();
+            if (FILE_NAME.IndexOf("/") > 0)
+            {
+                filename = FILE_NAME.Substring(0, FILE_NAME.IndexOf("/"));
+                filename += @"\";
+                filename += FILE_NAME.Substring(FILE_NAME.IndexOf("/") + 1);
+
+                FILE_NAME = filename;             
+            }          
             if (FILE_NAME == "" || RequestContains(FILE_NAME, "index"))
             {
                 BuildFileList(FILES);
-                FragmentateAndSend(STORAGE_PATH + "\\index.html", FileType.Html);
+                FragmentateAndSend("index.html", FileType.Html);
             }
             else
             {
-                if (IsFileFound(ref FILE_NAME, FILES))
+                try
+                {
+                    exist = File.Exists(STORAGE_PATH + @"\" + FILE_NAME);
+                }
+                catch(Exception)
+                {
+                    exist = false;
+                }
+                if (exist)
                 {
                     FILE_EXTENTION = GetFileExtention(FILE_NAME.ToLower());
                     switch (FILE_EXTENTION)
@@ -233,6 +255,12 @@ namespace HttpLibrary
                         case "html":
                             FragmentateAndSend(FILE_NAME, FileType.Html);
                             break;
+                        case "css":
+                            FragmentateAndSend(FILE_NAME, FileType.CSS);
+                            break;
+                        case "png":
+                            FragmentateAndSend(FILE_NAME, FileType.PNG);
+                            break;
                         default:
                             FragmentateAndSend(FILE_NAME, FileType.Html);
                             break;
@@ -240,7 +268,7 @@ namespace HttpLibrary
                 }
                 else
                 {
-                    FragmentateAndSend(STORAGE_PATH + "\\NotFound.txt",FileType.Html);
+                    FragmentateAndSend("NotFound.txt",FileType.Html);
                 }
 
             }
