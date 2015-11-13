@@ -9,9 +9,10 @@ using SecretLabs.NETMF.Hardware;
 using SecretLabs.NETMF.Hardware.Netduino;
 using System.IO;
 using System.Text;
-
-
-namespace HttpLibrary
+using Json.NETMF;
+using Json;
+using System.Collections;
+namespace NetduinoStation
 {
     /// <summary>
     /// on error event arguments
@@ -58,6 +59,7 @@ namespace HttpLibrary
         private StreamWriter FILE_WRITER;
         private byte[] RECEIVE_BUFFER;
         private byte[] SEND_BUFFER;
+        WeatherInfo weatherInfo;
         /// <summary>
         /// property returns true if server is running and listening
         /// </summary>
@@ -110,7 +112,7 @@ namespace HttpLibrary
                 return;
             }
             
-
+            
             switch (Type)
             {
                 case FileType.Html:
@@ -209,6 +211,7 @@ namespace HttpLibrary
             Debug.Print("\n\n\n"+REQUEST);
             FILES = Directory.GetFiles(STORAGE_PATH);
             FILE_NAME = GetFileName(REQUEST).ToLower();
+            Debug.Print(FILE_NAME);
             if (FILE_NAME.IndexOf("/") > 0)
             {
                 filename = FILE_NAME.Substring(0, FILE_NAME.IndexOf("/"));
@@ -221,6 +224,22 @@ namespace HttpLibrary
             {
                 BuildFileList(FILES);
                 FragmentateAndSend("index.html", FileType.Html);
+            }
+            else if ( FILE_NAME.Equals("weatherinfo.json"))
+            {
+                Debug.Print("mudak");
+                Hashtable hashtable = new Hashtable();
+                hashtable.Add("Shade_temperature",weatherInfo.Shade_temperature);
+                hashtable.Add("Light_temperature", weatherInfo.Light_temperature);
+                hashtable.Add("Scale", weatherInfo.Scale);
+                hashtable.Add("Illumination", weatherInfo.Illumination);
+                hashtable.Add("DateTime", weatherInfo.DateTime);
+                Debug.Print("mudak");
+                string json = JsonSerializer.SerializeObject(hashtable);
+                Debug.Print(json);
+                byte[] response = UTF8Encoding.UTF8.GetBytes(HtmlPageHeader + "text/json;charset=UTF-8;\r\nContent-Length: " + UTF8Encoding.UTF8.GetBytes("[" + json + "]").Length + "\r\n\r\n" + "[" + json + "]");
+                ACCEPTED_SOCKET.Send(response, response.Length, 0);
+                //Debug.Print(response.ToString());
             }
             else
             {
@@ -354,8 +373,15 @@ namespace HttpLibrary
                 FILE_STREAM.Close();
             }
             Thread.Sleep(5000);
+            NistTime nt = new NistTime();
             NetworkInterface networkInterface = NetworkInterface.GetAllNetworkInterfaces()[0];
             LISTEN_IP = networkInterface.IPAddress;
+            weatherInfo = new WeatherInfo();
+            weatherInfo.Shade_temperature = 23;
+            weatherInfo.Light_temperature = 31;
+            weatherInfo.Scale = "C";
+            weatherInfo.Illumination = "Cloudly";
+            weatherInfo.DateTime = nt.getDateTime();
         }
         /// <summary>
         /// starts the server and listens to connections

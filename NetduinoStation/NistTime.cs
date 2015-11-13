@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections;
 using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 
@@ -37,7 +35,7 @@ namespace NetduinoStation
                 int numberOfBytes = socket.Receive(buffer);
                 if (numberOfBytes == 51)
                 {
-                    string timeString = System.Text.ASCIIEncoding.ASCII.GetString(buffer, 0, numberOfBytes).Trim();
+                    string timeString = new String(System.Text.Encoding.UTF8.GetChars(buffer, 0, numberOfBytes)).Trim();
                     return timeString;
                 }
                 else
@@ -51,11 +49,16 @@ namespace NetduinoStation
 
         private DateTime ParceNistAnswer(string timeString)
         {
-            string[] resultTokens = timeString.Split(separators, StringSplitOptions.RemoveEmptyEntries);
-            if (resultTokens[7] != "UTC(NIST)" || resultTokens[8] != "*")
-            {
-                throw new ApplicationException(string.Format("Invalid RFC-867 daytime protocol string: '{0}'", timeString));
-            }
+            string[] resultTokensRaw = timeString.Split(separators/*, StringSplitOptions.RemoveEmptyEntries*/);
+            string[] resultTokens = new string[resultTokensRaw.Length];
+            int j = 0;
+            for (int i = 0; i < resultTokensRaw.Length; i++)
+                if (resultTokensRaw[i] != " " && resultTokensRaw[i] != "")
+                    resultTokens[j++] = resultTokensRaw[i]; 
+                if (resultTokens[7] != "UTC(NIST)" || resultTokens[8] != "*")
+                {
+                    throw new ApplicationException("Invalid RFC-867 daytime protocol string: " + timeString);
+                }
 
             int mjd = int.Parse(resultTokens[0]);  // "JJJJ is the Modified Julian Date (MJD). The MJD has a starting point of midnight on November 17, 1858."
             DateTime now = new DateTime(1858, 11, 17);
@@ -65,8 +68,8 @@ namespace NetduinoStation
             int hours = int.Parse(timeTokens[0]);
             int minutes = int.Parse(timeTokens[1]);
             int seconds = int.Parse(timeTokens[2]);
-            double millis = double.Parse(resultTokens[6], EnglishUSACulture);     // this is speculative: official documentation seems out of date!
-
+            double millis = double.Parse(resultTokens[6]/*, EnglishUSACulture*/);     // this is speculative: official documentation seems out of date!
+            
             now = now.AddHours(hours);
             now = now.AddMinutes(minutes);
             now = now.AddSeconds(seconds);
