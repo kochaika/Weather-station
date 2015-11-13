@@ -6,21 +6,25 @@
     <title>MDP</title>
 </head>
 <script type="text/javascript">
+    var date = new Date();
+
     function tab(tab) {
         document.getElementById('tab1').style.display = 'none';
         document.getElementById('tab2').style.display = 'none';
         document.getElementById('tab3').style.display = 'none';
+        document.getElementById('tab1').style.textDecorationNone;
+        document.getElementById('tab2').style.textDecorationNone;
+        document.getElementById('tab3').style.textDecorationNone;
         document.getElementById('li_tab1').setAttribute("class", "");
         document.getElementById('li_tab2').setAttribute("class", "");
         document.getElementById('li_tab3').setAttribute("class", "");
         document.getElementById(tab).style.display = 'block';
         document.getElementById('li_' + tab).setAttribute("class", "active");
     }
-</script>
-<script>
+
     function onTick() {
         var xmlhttp = new XMLHttpRequest();
-        var url = "http://www.w3schools.com/website/Customers_MYSQL.php";
+        var url = "http://localhost:52149/WeatherInfo.ashx"
 
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
@@ -34,105 +38,146 @@
  
     function myFunction(response) {
         var arr = JSON.parse(response);
-        var i;
-        var out = "<table>";
+        var parseDate = new Date();
+        parseDate.setTime(Date.parse(arr[0].DateTime));
+        var out = "<div style=\"display: inline-block; width: 95%; height: 95%; \"><table class=\"table\">";
+        out += "<tr><td class=\"currentData\">" +
+        "Температура в тени " +
+        "</td><td class=\"currentDataValues\">" +
+        arr[0].Shade_temperature + " °" + arr[0].Scale + 
+        "</td></tr><tr><td class=\"currentData\">" +
+        "Температура на солнце " +
+        "</td><td class=\"currentDataValues\">" +
+        arr[0].Light_temperature + " °" + arr[0].Scale + 
+        "</td></tr><tr><td class=\"currentData\" >" +
+        "Освещенность " +
+        "</td><td class=\"currentDataValues\">" +
+        arr[0].Illumination + 
+        "</td></tr><tr><td class=\"currentData\">" +
+        "Время измерений " +
+        "</td><td class=\"currentDataValues\">" +
+        parseDate.toLocaleString() + 
+        "</td></tr>"+
+        "</table>" + 
+        "<button class=\"butt\" style=\" margin-left: 150px; margin-top: 10px; margin-bottom: 10px;\" onclick='onTick()' >Обновить</button></div>";
 
-        for (i = 0; i < arr.length; i++) {
-            out += "<tr><td>" +
-            arr[i].Name +
-            "</td><td>" +
-            arr[i].City +
-            "</td><td>" ;
-        }
-        out += "</table>";
-        
+
         document.getElementById("Div1").innerHTML = out;
     }
+
+    function funonload() {
+        var xmlhttp = new XMLHttpRequest();
+        var url = "http://localhost:52149/DateTime.ashx"
+        xmlhttp.open("GET", url, true);
+        xmlhttp.send();
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                var arr = JSON.parse(xmlhttp.responseText);
+                date.setTime(Date.parse(arr[0].DateTime));
+            }
+        }
+        document.getElementById("CurDateTime").innerHTML = date.toLocaleString();
+        onTick();
+    }
+
+    function loadDateTime(){
+        date.setSeconds(date.getSeconds()+1);
+        document.getElementById("CurDateTime").innerHTML = date.toLocaleString();
+    }
+
+    setInterval(function(){Timer()},1000);
+    function Timer() {
+        loadDateTime();
+    }
+
 </script>
 
-<body>
+<body onload = "funonload();">
     <header class="content-wrapper" style="display: block;">
-            <div class="float-left">
+            <div class="float-right">
                 <p class="site-title">
-                    <a runat="server" href="~/"><img src="images/weather.png" width="90" height="90" alt="Пример"/></a>
+                    <a><img src="images/weather.png" width="100" height="100" alt="Weather"/></a>
                 </p>
             </div>
-            <div class="float-right">
-                    <h1>MDP. Welcome to Weather station</h1>
-                    <p>
-                        To learn more about our team's project, visit <a href="https://drive.google.com/folderview?id=0B1qJYO_YS5DZU0lKNFZYdDlDTms&usp=sharing_eid&ts=561d3223" title="Our project description on google drive">drive google</a>.  
-                    </p>
-            </div>
+            <div class="float-left">
+                    <h1>Weather Station</h1>
+                    <table>
+                        <td class="CurrentTD">
+                            Текущее время 
+                        </td>
+                        <td>
+                            <div class="CurrentTD" id="CurDateTime">время</div>
+                        </td>                        
+                    </table>    
+                    
+             </div>
     </header>
     <div id="body">
-    <div id="Tabs" style="display: block;">
+    <div id="Tabs" style="display: block; ">
         <ul>
-            <li id="li_tab1" onclick="onTick()"><a>Total info</a></li>
-            <li id="li_tab2" onclick="tab('tab2')"><a>About task</a></li>
-            <li id="li_tab3" onclick="tab('tab3')"><a>Contacts</a></li>
+            <li id="li_tab1" onclick="onTick()"><a id="info" style="background:#fafff7">Текущие данные</a></li>
+            <li id="li_tab2" onclick="tab('tab2')"><a id ="congig" style="background:#f1fefe">Конфигурация</a></li>
+            <li id="li_tab3" onclick="tab('tab3')"><a id ="contacts" style="background:#f6f3fc">Контакты</a></li>
         </ul>
         <div id="Content_Area">
-            <div id="tab1">  
-                <div id="Div1">  
-            </div>
-            </div>
-            <div id="tab2" style="display: none;">
-                <div style="width: 1000px; height: 1000px; line-height: 30px; display: normal;">
-                    <h2>Разработать ПО погодной станции. </h2>
-                    Система должна состоять из двух модулей:
-                     <ol type="disc">
-                         <li>Основной модуль:
-                                <ol type="circle">
-                                    <li>Имеет Web-интерфейс управления</li>
-                                    <li>Отдает информацию по JSON, взаимодействует с соцсетями (по выбору)</li>
-                                    <li>Синхронизирует время по NTP</li>
-                                    <li>Отправляет команды/получает данные вспомогательному модулю на частоте 2.4GHz</li>
-                                </ol>
-                         </li>
-
-                         <li>Датчик – измеряет температуру (и возможно другие параметры), передает информацию основному модулю.</li>
-
-                         <li>Платформа: Основной модуль: .Net micro, датчик: NXP ARM low-power</li>
-
-                         <li>Сложность: 3 </li>
-                     </ol>
+            <div id="tab1" style="display:none; background:#f5fcf2;" >  
+                <div id="Div1" style="margin-left: 3%">  
                 </div>
             </div>
-            <div id="tab3" style="display: none;">
-                <div style="display: inline-block;">
-                    <div style="display: inline-block;">
-                        <h3>Architect</h3>
-                        <span><a href="https://vk.com/id39891456">
-                            <img src="Images/contact_k.png" width="140" height="150" alt="Чайка К.В." /></a><br />
-                            <a href="mailto:pro100kot14@gmail.com">Чайка Константин</a></span>
+            <div id="tab2" style="display: none; background:#f1fefe;">
+                <div style="width: 95%; height: 95%; margin-left: 3%; display: inline-block;">
+                    <form action="SettingsHandler">
+                        <h3>Температурная шкала</h3>
+                            <div><input name="TempScale" type="radio" value="C" checked/>Цельсии</div>
+                            <div><input name="TempScale" type="radio" value="F"/>Фаренгейты</div>
+                        <h3>Интервал опроса датчика</h3>
+                            <div><input required name="SensorInterval" type="text" size=5/> минут</div>
+                        <h3>Адрес NTP сервера для синхронизации времени</h3>
+                            <div><input required name="NTPServer" type="text" size=25/></div>
+                            <p style=" text-indent: 2em;">TODO: Учитывать при обработке, что возможен вид как в виде IP-адреса, так и в виде DNS-имени</p>
+                        <h3>Интервал синхронизации времени</h3>
+                            <div><input required name="TimeInterval" type="text" size=5 /> часов</div>
+                        
+                        <input type="submit" class="butt" style=" margin-top: 50px; margin-left: 70px; margin-bottom: 20px; width: 100px; height: 40px; border-radius:12px; border: 3px solid #c8c8c8; font:16px Tahoma, Geneva, sans-serif; font-weight:bold;  color:#000000; " value="Изменить"/>
+                    </form>
+                </div>
+            </div>
+            <div id="tab3" style="display: none; background: #f6f3fc;">
+                <div style="display: inline-block; width: 95%; height: 95%; ">
+                    <div style="display: inline-block;  margin-left: 50px;">
+                        <span>
+                            <h3>Architect</h3>
+                            <a href="https://vk.com/id39891456" target="_blank">
+                            <img class="shine"src="Images/contact_k.png" alt="Чайка К.В."/></a><br/>
+                            <a href="mailto:pro100kot14@gmail.com">Чайка Константин</a>
+                        </span>
 
                     </div>
-                    <div style="display: inline-block;">
-                        <h3>Developer</h3>
-
+                    <div style="display: inline-block;  margin-left: 50px;">
                         <span>
-                            <a href="https://vk.com/vladspam">
-                                <img src="Images/contact_v.png" width="140" height="150" alt="Дудов В.А." /></a><br />
+                            <h3>Developer</h3>
+                            <a href="https://vk.com/vladspam" target="_blank">
+                                <img class="shine" src="Images/contact_v.png" width="140" height="150" alt="Дудов В.А." /></a><br />
                             <a href="mailto:dudovlad@gmail.com">Дудов Владислав</a>
                         </span>
 
                     </div>
-                    <div style="display: inline-block;">
-                        <h3>Tester</h3>
-
-                        <span><a href="https://vk.com/fahrenheit001">
-                            <img src="Images/contact_i.png" width="140" height="150" alt="Вертилецкий И.А." /></a><br />
-                            <a href="mailto:vertileckii.ilya@gmail.com">Вертилецкий Илья</a></span>
+                    <div style="display: inline-block;  margin-left: 50px;">
+                        <span>
+                            <h3>Tester</h3>
+                            <a href="https://vk.com/fahrenheit001" target="_blank">
+                            <img class="shine" src="Images/contact_i.png" width="140" height="150" alt="Вертилецкий И.А." /></a><br />
+                            <a href="mailto:vertileckii.ilya@gmail.com">Вертилецкий Илья</a>
+                        </span>
 
                     </div>
-                    <div style="display: inline-block;">
-                        <h3>Project manager</h3>
-
-                        <span><a href="https://vk.com/razmn">
-                            <img src="Images/contact_n.png" width="180" height="150" alt="Размочаева Н.В." /><br />
-                        </a>
-                            <a href="mailto:natalyrazzm@gmail.com">Размочаева Наталья</a></span>
-
+                    <div style="display: inline-block;  margin-left: 50px;">
+                        <span>
+                            <h3>Project manager</h3>
+                            <a href="https://vk.com/razmn" target="_blank">
+                            <img  class="shine" src="Images/contact_n.png" width="180" height="150" alt="Размочаева Н.В." /></a><br/>
+                            <a href="mailto:natalyrazzm@gmail.com">Размочаева Наталья</a>
+                        </span>
                     </div>
                 </div>
             </div>
