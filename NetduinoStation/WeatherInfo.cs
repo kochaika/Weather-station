@@ -5,10 +5,19 @@ namespace NetduinoStation
 {
     class WeatherInfo
     {
-        public int Shade_temperature {get; set;}
-        public int Light_temperature {get; set;}
-        public string Scale {get; set;}
-        public string Illumination {get; set;}
-        public DateTime DateTime {get; set;}
+        public int ShadeTemperature { get; set; }
+		public int LightTemperature { get; set; }
+		public string Scale { get; set; }
+		public string Illumination { get; set; }
+		public DateTime DateTime { get; set; }
+
+		public WeatherInfo()
+		{
+			ShadeTemperature = 0;
+			LightTemperature = 0;
+			Scale = "C";
+			Illumination = "Cloudly";
+			DateTime = DateTime.Now;
+		}
     }
 }

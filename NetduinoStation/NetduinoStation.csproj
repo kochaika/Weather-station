@@ -33,20 +33,40 @@
   <Import Project="$(NetMfTargetsBaseDir)$(TargetFrameworkVersion)\CSharp.Targets" />
   <ItemGroup>
     <Compile Include="HttpServer.cs" />
+    <Compile Include="Illumination.cs" />
+    <Compile Include="NistTime.cs" />
     <Compile Include="NRF24L01Plus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="RequestCodes.cs" />
+    <Compile Include="WeatherInfo.cs" />
+    <Compile Include="Updater.cs" />
     <Compile Include="WirelessTransmitter.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Json.NetMF, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Json.NetMF.1.3.0.0\lib\netmf43\Json.NetMF.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.SPOT.Hardware" />
     <Reference Include="Microsoft.SPOT.Hardware.PWM" />
     <Reference Include="Microsoft.SPOT.Hardware.SerialPort" />
     <Reference Include="Microsoft.SPOT.Native" />
     <Reference Include="Microsoft.SPOT.Net" />
+    <Reference Include="MicroTweet, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MicroTweet.2.0.1.0\lib\netmf43\MicroTweet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="SecretLabs.NETMF.Hardware" />
     <Reference Include="SecretLabs.NETMF.Hardware.Netduino" />
     <Reference Include="System" />
+    <Reference Include="System.Http" />
     <Reference Include="System.IO" />
+    <Reference Include="System.Net.Security" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
 </Project>

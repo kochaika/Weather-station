@@ -12,6 +12,7 @@ using System.Text;
 using Json.NETMF;
 using Json;
 using System.Collections;
+
 namespace NetduinoStation
 {
     /// <summary>
@@ -60,6 +61,7 @@ namespace NetduinoStation
         private byte[] RECEIVE_BUFFER;
         private byte[] SEND_BUFFER;
         WeatherInfo weatherInfo;
+		Updater updater;
         /// <summary>
         /// property returns true if server is running and listening
         /// </summary>
@@ -100,15 +102,16 @@ namespace NetduinoStation
         {
             byte[] HEADER;
             long FILE_LENGTH;
+
             try
             {
                 FILE_STREAM = new FileStream(STORAGE_PATH + "\\" + FILE_NAME, FileMode.Open, FileAccess.Read);
                 FILE_READER = new StreamReader(FILE_STREAM);
                 FILE_LENGTH = FILE_STREAM.Length;
             }
-            catch (IOException)
+            catch (IOException e)
             {
-                Debug.Print("OoopsFile:   " + STORAGE_PATH + "\\" + FILE_NAME);
+				Debug.Print("Ooops File:   " + STORAGE_PATH + "\\" + FILE_NAME + e.Message);
                 return;
             }
             
@@ -160,37 +163,6 @@ namespace NetduinoStation
         {
             return (Request.IndexOf(Str) >= 0);
         }
-        private void BuildFileList(string[] FILES)
-        {
-            FILE_STREAM = new FileStream(STORAGE_PATH + "\\index.txt", FileMode.Create, FileAccess.Write);
-            FILE_WRITER = new StreamWriter(FILE_STREAM);
-            FILE_WRITER.WriteLine("<html>");
-            FILE_WRITER.WriteLine("<head>");
-            FILE_WRITER.WriteLine("<title>");
-            FILE_WRITER.WriteLine("Index Page");
-            FILE_WRITER.WriteLine("</title>");
-            FILE_WRITER.WriteLine("<body>");
-            FILE_WRITER.WriteLine("<h1 align=center>");
-            FILE_WRITER.WriteLine("FILE LIST");
-            FILE_WRITER.WriteLine("</h1>");
-            FILE_WRITER.WriteLine("<h1 align=center>");
-            FILE_WRITER.WriteLine((FILES.Length - 2).ToString() + " FILES");
-            FILE_WRITER.WriteLine("</h1>");
-            foreach (string F in FILES)
-            {
-                if (!RequestContains(F, "index") && !RequestContains(F, "NotFound"))
-                {
-                    FILE_WRITER.WriteLine("<h1 align=center><a href=\"");
-                    FILE_WRITER.WriteLine("/" + F.Substring(F.LastIndexOf("\\") + 1).ToLower() + "\">");
-                    FILE_WRITER.WriteLine(F.Substring(F.LastIndexOf("\\") + 1).ToLower());
-                    FILE_WRITER.WriteLine("</a>");
-                }
-            }
-            FILE_WRITER.WriteLine("</body>");
-            FILE_WRITER.WriteLine("</html>");
-            FILE_WRITER.Close();
-            FILE_STREAM.Close();
-        }
 
         private string GetFileExtention(string FILE_NAME)
         {
@@ -208,10 +180,9 @@ namespace NetduinoStation
             string FILE_EXTENTION = "";
             ACCEPTED_SOCKET.Receive(RECEIVE_BUFFER);
             REQUEST = new string(UTF8Encoding.UTF8.GetChars(RECEIVE_BUFFER));
-            Debug.Print("\n\n\n"+REQUEST);
+            Debug.Print("\n     * * * "+REQUEST);
             FILES = Directory.GetFiles(STORAGE_PATH);
             FILE_NAME = GetFileName(REQUEST).ToLower();
-            Debug.Print(FILE_NAME);
             if (FILE_NAME.IndexOf("/") > 0)
             {
                 filename = FILE_NAME.Substring(0, FILE_NAME.IndexOf("/"));
@@ -222,25 +193,29 @@ namespace NetduinoStation
             }          
             if (FILE_NAME == "" || RequestContains(FILE_NAME, "index"))
             {
-                BuildFileList(FILES);
                 FragmentateAndSend("index.html", FileType.Html);
             }
             else if ( FILE_NAME.Equals("weatherinfo.json"))
             {
-                Debug.Print("mudak");
+				weatherInfo = updater.WeatherInfo;
                 Hashtable hashtable = new Hashtable();
-                hashtable.Add("Shade_temperature",weatherInfo.Shade_temperature);
-                hashtable.Add("Light_temperature", weatherInfo.Light_temperature);
+                hashtable.Add("Shade_temperature",weatherInfo.ShadeTemperature);
+                hashtable.Add("Light_temperature", weatherInfo.LightTemperature);
                 hashtable.Add("Scale", weatherInfo.Scale);
                 hashtable.Add("Illumination", weatherInfo.Illumination);
                 hashtable.Add("DateTime", weatherInfo.DateTime);
-                Debug.Print("mudak");
                 string json = JsonSerializer.SerializeObject(hashtable);
                 Debug.Print(json);
                 byte[] response = UTF8Encoding.UTF8.GetBytes(HtmlPageHeader + "text/json;charset=UTF-8;\r\nContent-Length: " + UTF8Encoding.UTF8.GetBytes("[" + json + "]").Length + "\r\n\r\n" + "[" + json + "]");
                 ACCEPTED_SOCKET.Send(response, response.Length, 0);
-                //Debug.Print(response.ToString());
             }
+			else if (FILE_NAME.Equals("datetime.json"))
+			{
+				string json = JsonSerializer.SerializeObject(DateTime.Now);
+				Debug.Print(json);
+				byte[] response = UTF8Encoding.UTF8.GetBytes(HtmlPageHeader + "text/json;charset=UTF-8;\r\nContent-Length: " + UTF8Encoding.UTF8.GetBytes("[" + json + "]").Length + "\r\n\r\n" + "[" + json + "]");
+				ACCEPTED_SOCKET.Send(response, response.Length, 0);
+			}
             else
             {
                 try
@@ -336,24 +311,6 @@ namespace NetduinoStation
             SEND_BUFFER = new byte[SendBufferSize];
             LISTEN_IP = "No Ip Address";
             SERVER_THREAD = new Thread(new ThreadStart(RunServer));
-            if (!File.Exists(STORAGE_PATH + "\\index.txt"))
-            {
-                FILE_STREAM = new FileStream(STORAGE_PATH + "\\index.txt", FileMode.Create, FileAccess.Write);
-                FILE_WRITER = new StreamWriter(FILE_STREAM);
-                FILE_WRITER.WriteLine("<html>");
-                FILE_WRITER.WriteLine("<head>");
-                FILE_WRITER.WriteLine("<title>");
-                FILE_WRITER.WriteLine("Index Page");
-                FILE_WRITER.WriteLine("</title>");
-                FILE_WRITER.WriteLine("<body>");
-                FILE_WRITER.WriteLine("<h1 align=center>");
-                FILE_WRITER.WriteLine("FILE LIST");
-                FILE_WRITER.WriteLine("</h1>");
-                FILE_WRITER.WriteLine("</body>");
-                FILE_WRITER.WriteLine("</html>");
-                FILE_WRITER.Close();
-                FILE_STREAM.Close();
-            }
             if (!File.Exists(STORAGE_PATH + "\\NotFound.txt"))
             {
                 FILE_STREAM = new FileStream(STORAGE_PATH + "\\NotFound.txt", FileMode.Create, FileAccess.Write);
@@ -373,15 +330,10 @@ namespace NetduinoStation
                 FILE_STREAM.Close();
             }
             Thread.Sleep(5000);
-            NistTime nt = new NistTime();
-            NetworkInterface networkInterface = NetworkInterface.GetAllNetworkInterfaces()[0];
-            LISTEN_IP = networkInterface.IPAddress;
-            weatherInfo = new WeatherInfo();
-            weatherInfo.Shade_temperature = 23;
-            weatherInfo.Light_temperature = 31;
-            weatherInfo.Scale = "C";
-            weatherInfo.Illumination = "Cloudly";
-            weatherInfo.DateTime = nt.getDateTime();
+			LISTEN_IP = NetworkInterface.GetAllNetworkInterfaces()[0].IPAddress;
+			
+			updater = new Updater();
+			updater.Start();         
         }
         /// <summary>
         /// starts the server and listens to connections

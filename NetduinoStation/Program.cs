@@ -6,7 +6,7 @@ using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 using SecretLabs.NETMF.Hardware;
 using SecretLabs.NETMF.Hardware.Netduino;
-using HttpLibrary;
+using MicroTweet;
 
 namespace NetduinoStation
 {
@@ -17,18 +17,16 @@ namespace NetduinoStation
         public static void Main()
         {
             var interf = Microsoft.SPOT.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()[0];
-            interf.EnableStaticIP("172.18.4.26", "255.255.244.0", "172.18.0.1");
-            //interf.EnableDhcp();
-
-	    //NistTime nist = new NistTime();
-            //DateTime datetime = nist.getDateTime(3);
-
+			//interf.EnableStaticIP("172.18.4.61", "255.255.244.0", "172.18.0.1");
+            interf.EnableDhcp();
             Thread.Sleep(1000);
+			Debug.Print("IP:" + interf.IPAddress.ToString() + " Mask: " + interf.SubnetMask.ToString() + " Mac: " + interf.PhysicalAddress.ToString());
             //var prog = new WirelessTransmitter();
             //prog.Start();
 
+		
             LedPin = new OutputPort(Pins.ONBOARD_LED, false);
-            Server = new HttpServer(80, 100, 256, @"\SD");
+            Server = new HttpServer(80, 256, 512, @"\SD");
             Server.OnServerError += new OnErrorDelegate(Server_OnServerError);
             Server.Start();
             Debug.Print("IP ADDRESS OBTAINED : " + Server.ObtainedIp);
