@@ -35,6 +35,45 @@
         xmlhttp.send();
         tab("tab1");
     }
+
+    function setSettings(response) {
+        var array = JSON.parse(response);
+        var out = "<form action=\"SettingsHandler\">"+
+        "<h3>Температурная шкала</h3>";
+
+        if (array[0].TempScale == "C"){
+            out += "<div id = \"TempScaleC\"><input name=\"TempScale\" type=\"radio\" value=\"C\" checked/>Цельсии</div>" +
+            "<div id = \"TempScaleC\"><input name=\"TempScale\" type=\"radio\" value=\"F\"/>Фаренгейты</div>";
+        }
+        if (array[0].TempScale == "F"){
+            out += "<div id = \"TempScaleC\"><input name=\"TempScale\" type=\"radio\" value=\"C\"/>Цельсии</div>" +
+                "<div id = \"TempScaleC\"><input name=\"TempScale\" type=\"radio\" value=\"F\" checked/>Фаренгейты</div>";
+        }
+        out+=  "<h3>Интервал опроса датчика</h3>" + 
+        "<div class=\"SensorInterval\"><input required name=\"SensorInterval\" type=\"text\" size=5/ value=\"" + array[0].SensorInterval + "\" минут></div>" +
+        "<h3>Адрес NTP сервера для синхронизации времени</h3>" + 
+        "<div class=\"NTPServer\"><input required name=\"NTPServer\" type=\"text\" size=25/ value=\"" + array[0].NTPServer + "\"</div>" +
+        "<p style=\" text-indent: 2em;\">TODO: Учитывать при обработке, что возможен вид как в виде IP-адреса, так и в виде DNS-имени</p>" +
+        "<h3>Интервал синхронизации времени</h3>" + 
+        "<div class=\"TimeInterval\"><input required name=\"TimeInterval\" type=\"text\" size=5/ value=\" " + array[0].TimeInterval + "\" часов</div><br>" +
+        "<input type=\"submit\" class=\"butt\" style=\" margin-top: 50px; margin-left: 70px; margin-bottom: 20px; width: 100px; height: 40px; border-radius:12px; border: 3px solid #c8c8c8; font:16px Tahoma, Geneva, sans-serif; font-weight:bold;  color:#000000; \" value=\"Изменить\"/>" + 
+        "</form>";
+        document.getElementById("Div2").innerHTML = out;
+    }
+
+    function loadSettings() {
+        var xmlhttp = new XMLHttpRequest();
+        var url = "http://localhost:52149/Settings.ashx"
+
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                setSettings(xmlhttp.responseText);
+            }
+        }
+        xmlhttp.open("GET", url, true);
+        xmlhttp.send();
+        tab('tab2');
+    }
  
     function myFunction(response) {
         var arr = JSON.parse(response);
@@ -60,8 +99,6 @@
         "</td></tr>"+
         "</table>" + 
         "<button class=\"butt\" style=\" margin-left: 150px; margin-top: 10px; margin-bottom: 10px;\" onclick='onTick()' >Обновить</button></div>";
-
-
         document.getElementById("Div1").innerHTML = out;
     }
 
@@ -77,6 +114,7 @@
             }
         }
         document.getElementById("CurDateTime").innerHTML = date.toLocaleString();
+        loadSettings();
         onTick();
     }
 
@@ -116,7 +154,7 @@
     <div id="Tabs" style="display: block; ">
         <ul>
             <li id="li_tab1" onclick="onTick()"><a id="info" style="background:#fafff7">Текущие данные</a></li>
-            <li id="li_tab2" onclick="tab('tab2')"><a id ="congig" style="background:#f1fefe">Конфигурация</a></li>
+            <li id="li_tab2" onclick="loadSettings()"><a id ="congig" style="background:#f1fefe">Конфигурация</a></li>
             <li id="li_tab3" onclick="tab('tab3')"><a id ="contacts" style="background:#f6f3fc">Контакты</a></li>
         </ul>
         <div id="Content_Area">
@@ -125,24 +163,7 @@
                 </div>
             </div>
             <div id="tab2" style="display: none; background:#f1fefe;">
-                <div style="width: 95%; height: 95%; margin-left: 3%; display: inline-block;">
-                    <form action="SettingsHandler">
-                        <h3>Температурная шкала</h3>
-                            <div><input name="TempScale" type="radio" value="C" checked/>Цельсии</div>
-                            <div><input name="TempScale" type="radio" value="F"/>Фаренгейты</div>
-                        <h3>Интервал опроса датчика</h3>
-                            <div><input required name="SensorInterval" type="text" size=5/> минут</div>
-                        <h3>Адрес NTP сервера для синхронизации времени</h3>
-                            <div><input required name="NTPServer" type="text" size=25/></div>
-                            <p style=" text-indent: 2em;">TODO: Учитывать при обработке, что возможен вид как в виде IP-адреса, так и в виде DNS-имени</p>
-                        <h3>Интервал синхронизации времени</h3>
-                            <div><input required name="TimeInterval" type="text" size=5 /> часов</div>
-                        <h3>Интервал обновления данных в Twitter</h3>
-                        Погодные данные твитятся<a href="https://twitter.com/pro100kot14">сюда</a>
-                            <div><input required name="TwitterInterval" type="text" size=5 /> минут</div>                            
-                        
-                        <input type="submit" class="butt" style=" margin-top: 50px; margin-left: 70px; margin-bottom: 20px; width: 100px; height: 40px; border-radius:12px; border: 3px solid #c8c8c8; font:16px Tahoma, Geneva, sans-serif; font-weight:bold;  color:#000000; " value="Изменить"/>
-                    </form>
+                <div id="Div2" style="width: 95%; height: 95%; margin-left: 3%; display: inline-block;">
                 </div>
             </div>
             <div id="tab3" style="display: none; background: #f6f3fc;">
