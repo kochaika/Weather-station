@@ -13,7 +13,7 @@ namespace NetduinoStation
 		public int TimeUpdateInterval { get; private set; }
 		public int WeatherUpdateInterval { get; private set; }
 		public WeatherInfo WeatherInfo { get; private set; }
-		string NistServerAddress { get; set; }
+		public string NistServerAddress { get; private set; }
 		NistTime nistTime;
 		Timer timerUpdateTime;
 		Timer timerUpdateWeather;
@@ -24,7 +24,7 @@ namespace NetduinoStation
 		public Updater()
 		{
 			WeatherInfo = new WeatherInfo();
-			TimeUpdateInterval = 10;
+			TimeUpdateInterval = 1;
 			WeatherUpdateInterval = 5;
 			NistServerAddress = "132.163.4.101";
 			nistTime = new NistTime(IPAddress.Parse(NistServerAddress));
@@ -36,16 +36,16 @@ namespace NetduinoStation
 			TimerCallback callbackUpdateTime = UpdateTime;
 			TimerCallback callbackUpdateWeather = UpdateWeather;
 
-			if (timerUpdateTime != null)
+			if (timerUpdateTime == null)
 			{
 				timerUpdateTime = new Timer(callbackUpdateTime, null, new TimeSpan(0, 0, 2),
 				new TimeSpan(0, TimeUpdateInterval, 0));
 			}
 
-			if (timerUpdateWeather != null)
+			if (timerUpdateWeather == null)
 			{
-				timerUpdateWeather = new Timer(callbackUpdateWeather, null, new TimeSpan(0, 0, 2),
-				new TimeSpan(0, WeatherUpdateInterval, 0));
+				//timerUpdateWeather = new Timer(callbackUpdateWeather, null, new TimeSpan(0, 0, 2),
+				//new TimeSpan(0, WeatherUpdateInterval, 0));
 			}
 		}
 
@@ -58,14 +58,22 @@ namespace NetduinoStation
 			if (timeUpdateInterval != TimeUpdateInterval)
 			{
 				TimeUpdateInterval = timeUpdateInterval;
-				timerUpdateTime.Change(new TimeSpan(0, 0, 0), new TimeSpan(0, timeUpdateInterval, 0));
+
+				if (timerUpdateTime != null)
+				{
+					timerUpdateTime.Change(new TimeSpan(0, 0, 0), new TimeSpan(0, timeUpdateInterval, 0));
+				}
 			}
 
 			if (weatherUpdateInterval != WeatherUpdateInterval || WeatherInfo.Scale != scale)
 			{
 				WeatherInfo.Scale = scale;
 				WeatherUpdateInterval = weatherUpdateInterval;
-				timerUpdateWeather.Change(new TimeSpan(0, 0, 0), new TimeSpan(0, weatherUpdateInterval, 0));
+
+				if (timerUpdateWeather != null)
+				{
+					timerUpdateWeather.Change(new TimeSpan(0, 0, 0), new TimeSpan(0, weatherUpdateInterval, 0));
+				}
 			}
 		}
 

@@ -18,10 +18,10 @@ namespace NetduinoStation
 		public NistTime(IPAddress timeServerIpAddress)
 		{
 			TimeServerIpAddress = timeServerIpAddress;
-			DateTime dt = GetDateTime(4);
+			//DateTime dt = GetDateTime(4);
 		}
 
-		public DateTime GetDateTime(int utc)
+		public DateTime GetDateTime(int utc = 0)
 		{
 			string nistTime = QueryNistTime();
 			DateTime dateTime = ParseNistAnswer(nistTime);
