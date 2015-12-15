@@ -6,26 +6,93 @@
     <title>MDP</title>
 </head>
 <script type="text/javascript">
+    /**
+    *   date - переменная для обработки текущей даты
+    */
     var date = new Date();
 
+    /**
+    *   Функция tab(tab) для переключения вкладок 
+    *   параметр tab - это id вкладки, которую нужно сделать активной
+    */
     function tab(tab) {
+        // сначала - скроем все вкладки
         document.getElementById('tab1').style.display = 'none';
         document.getElementById('tab2').style.display = 'none';
         document.getElementById('tab3').style.display = 'none';
+        // очистим выделение выбранной вкладки 
         document.getElementById('tab1').style.textDecorationNone;
         document.getElementById('tab2').style.textDecorationNone;
         document.getElementById('tab3').style.textDecorationNone;
+        // очистим атрибут "class" всех вкладок
         document.getElementById('li_tab1').setAttribute("class", "");
         document.getElementById('li_tab2').setAttribute("class", "");
         document.getElementById('li_tab3').setAttribute("class", "");
+        // заданим формат представление вкладок относительно друг друга
         document.getElementById(tab).style.display = 'block';
+        // если требуется выделить вторую вкладку, обновим заодно и параметры настроек конфигурации
+        if (tab == 'tab2') updateConfig();
+        // делаем содержимое выбранной вкладки активным
         document.getElementById('li_' + tab).setAttribute("class", "active");
     }
 
+    /** 
+    *   Функция updateConfig() заполнения полей настроек конфигурации значениями по умолчанию 
+    *   Значения по умолчанию берутся с сервера (отправляется на сервер запрос, чтобы узнать значения параметров конфигурации, внесенных ранее
+    *   ответ с сервера в формате json парсится функцией parseConfig()
+    *       P.S. Так как все ответы сервера приходят в формате json, то подробно опишем только эту функцию - парсер ответа в json формате
+    */
+    function updateConfig() {
+        // формируем новый запрос к серверу
+        var xmlhttp = new XMLHttpRequest();
+        // и ждем ответ по данному url
+        var url = "http://localhost:52149/Settings.ashx"
+        // обрабатываем ответ сервера
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                // вызываем функцию для разбора ответа 
+                parseConfig(xmlhttp.responseText);
+            }
+        }
+        // высылаем подтверждение о том, что ответ был принят (принят по методу GET)
+        xmlhttp.open("GET", url, true);
+        xmlhttp.send();
+    }
+
+    /**
+    *   Функция parseConfig(response) осуществляет разбор ответа с сервера,
+    *   в котором содержатся старые значения параметров конфигурации
+    */
+    function parseConfig(response) {
+        var arr = JSON.parse(response);
+        /* 
+        *   Анализируем значение шкалы измерений (Цельсии или Фаренгейты) и
+        *   устанавливаем атрибут "checked" в значение "checked" соответветствующего radio-button'a
+        */
+        // Для установки температурной шкалы (radio) проверяем, какая единица измерения была выбрана в прошлый раз
+        // Если ранее было установлено "С" - Цельсии, то делаем "checked" соответсвующую Цельсиям radio
+        if (arr[0].TempScale == "C")
+            document.getElementById("TempScaleC").setAttribute("checked", "checked");
+        // Если ранее было установлено "F" - Фаренгейты, то делаем "checked" соответсвующую Фаренгейтам radio
+        if (arr[0].TempScale == "F")
+            document.getElementById("TempScaleC").setAttribute("checked", "checked");
+        // Значения остальных параметров вносим в текстовые поля, а именно "записываем" в текстовое поле содержимое ("value") по умолчанию: 
+        // 1) значение интервала опроса датчика
+        document.getElementById("SensorInterval").setAttribute("value", arr[0].SensorInterval);
+        // 2) значение адреса NTP-сервера
+        document.getElementById("NTPServer").setAttribute("value", arr[0].NTPServer);
+        // 3) значение интервала синхронизации времени
+        document.getElementById("TimeInterval").setAttribute("value", arr[0].TimeInterval);
+    }
+
+    /**
+    *   Функция onTick() обновляет информацию о погоде
+    *   На сервер отправляется запрос текущих погодных данных
+    *   В функции  myFunction() происходит парсинг ответа сервера в формате json
+    */
     function onTick() {
         var xmlhttp = new XMLHttpRequest();
         var url = "http://localhost:52149/WeatherInfo.ashx"
-
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 myFunction(xmlhttp.responseText);
@@ -36,72 +103,50 @@
         tab("tab1");
     }
 
-    function setSettings(response) {
-        var array = JSON.parse(response);
-        var out = "<form action=\"SettingsHandler\">"+
-        "<h3>Температурная шкала</h3>";
-
-        if (array[0].TempScale == "C"){
-            out += "<div id = \"TempScaleC\"><input name=\"TempScale\" type=\"radio\" value=\"C\" checked/>Цельсии</div>" +
-            "<div id = \"TempScaleC\"><input name=\"TempScale\" type=\"radio\" value=\"F\"/>Фаренгейты</div>";
-        }
-        if (array[0].TempScale == "F"){
-            out += "<div id = \"TempScaleC\"><input name=\"TempScale\" type=\"radio\" value=\"C\"/>Цельсии</div>" +
-                "<div id = \"TempScaleC\"><input name=\"TempScale\" type=\"radio\" value=\"F\" checked/>Фаренгейты</div>";
-        }
-        out+=  "<h3>Интервал опроса датчика</h3>" + 
-        "<div class=\"SensorInterval\"><input required name=\"SensorInterval\" type=\"text\" size=5/ value=\"" + array[0].SensorInterval + "\" минут></div>" +
-        "<h3>Адрес NTP сервера для синхронизации времени</h3>" + 
-        "<div class=\"NTPServer\"><input required name=\"NTPServer\" type=\"text\" size=25/ value=\"" + array[0].NTPServer + "\"</div>" +
-        "<p style=\" text-indent: 2em;\">TODO: Учитывать при обработке, что возможен вид как в виде IP-адреса, так и в виде DNS-имени</p>" +
-        "<h3>Интервал синхронизации времени</h3>" + 
-        "<div class=\"TimeInterval\"><input required name=\"TimeInterval\" type=\"text\" size=5/ value=\" " + array[0].TimeInterval + "\" часов</div><br>" +
-        "<input type=\"submit\" class=\"butt\" style=\" margin-top: 50px; margin-left: 70px; margin-bottom: 20px; width: 100px; height: 40px; border-radius:12px; border: 3px solid #c8c8c8; font:16px Tahoma, Geneva, sans-serif; font-weight:bold;  color:#000000; \" value=\"Изменить\"/>" + 
-        "</form>";
-        document.getElementById("Div2").innerHTML = out;
-    }
-
-    function loadSettings() {
-        var xmlhttp = new XMLHttpRequest();
-        var url = "http://localhost:52149/Settings.ashx"
-
-        xmlhttp.onreadystatechange = function () {
-            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                setSettings(xmlhttp.responseText);
-            }
-        }
-        xmlhttp.open("GET", url, true);
-        xmlhttp.send();
-        tab('tab2');
-    }
- 
+    /**
+    *   Функция myFunction(response) осуществляет разбор json-ответа response
+    *   в котором содержится информация о текущей погоде 
+    *   полученные значения отображаются на html-странице
+    */
     function myFunction(response) {
+        // Разбор ответа = формируется массив ключ-значение, что соответвует формату json
         var arr = JSON.parse(response);
+        // Для хранение даты и времени в корректном формате создаем вспомогательную переменную
         var parseDate = new Date();
+        // Вносим полученное в ответе значение времени/даты в переменную
         parseDate.setTime(Date.parse(arr[0].DateTime));
+        // формируем html-код в переменной out со значениями массива arr
         var out = "<div style=\"display: inline-block; width: 95%; height: 95%; \"><table class=\"table\">";
+        // отображаем все данные в виде html-таблицы
         out += "<tr><td class=\"currentData\">" +
         "Температура в тени " +
         "</td><td class=\"currentDataValues\">" +
-        arr[0].Shade_temperature + " °" + arr[0].Scale + 
+        arr[0].Shade_temperature + " °" + arr[0].Scale +
         "</td></tr><tr><td class=\"currentData\">" +
         "Температура на солнце " +
         "</td><td class=\"currentDataValues\">" +
-        arr[0].Light_temperature + " °" + arr[0].Scale + 
+        arr[0].Light_temperature + " °" + arr[0].Scale +
         "</td></tr><tr><td class=\"currentData\" >" +
         "Освещенность " +
         "</td><td class=\"currentDataValues\">" +
-        arr[0].Illumination + 
+        arr[0].Illumination +
         "</td></tr><tr><td class=\"currentData\">" +
         "Время измерений " +
         "</td><td class=\"currentDataValues\">" +
-        parseDate.toLocaleString() + 
-        "</td></tr>"+
-        "</table>" + 
+        parseDate.toLocaleString() +
+        "</td></tr>" +
+        "</table>" +
         "<button class=\"butt\" style=\" margin-left: 150px; margin-top: 10px; margin-bottom: 10px;\" onclick='onTick()' >Обновить</button></div>";
+        // Размещаем полученный html-код в div-блоке с id = "Div1"
         document.getElementById("Div1").innerHTML = out;
     }
 
+    /**
+    *   Функция funonload() выполняется при загрузке страницы
+    *   Ее назначение - получить с сервера корректное значение даты и времени
+    *   Ответ сервера, содержащий дату и время, в формате json парсится и
+    *   полученные данные заносятся в div-блок с id = CurDateTime
+    */
     function funonload() {
         var xmlhttp = new XMLHttpRequest();
         var url = "http://localhost:52149/DateTime.ashx"
@@ -114,102 +159,164 @@
             }
         }
         document.getElementById("CurDateTime").innerHTML = date.toLocaleString();
-        loadSettings();
         onTick();
     }
 
-    function loadDateTime(){
-        date.setSeconds(date.getSeconds()+1);
+    /**
+    *   Функция loadDateTime() предназначения для обновления текущего времени
+    */
+    function loadDateTime() {
+        // увеличиваем секунды на 1
+        date.setSeconds(date.getSeconds() + 1);
+        // выводим дату и время в div-блоке с id = "CurDateTime"
         document.getElementById("CurDateTime").innerHTML = date.toLocaleString();
     }
 
-    setInterval(function(){Timer()},1000);
+    /**
+    *   Стандартный метод JS setInterval указывает, что 
+    *   функцию Timer() надо вызывать с частотой (с интервалом в) 1000 мс (1 с)
+    */
+    setInterval(function () { Timer() }, 1000);
+
+    /**
+    *   Функция Timer() создана для удобства вызова 
+    *   функции loadDateTime() с конкретной частотой (см. метод выше)
+    */
     function Timer() {
         loadDateTime();
     }
-
 </script>
 
-<body onload = "funonload();">
+<body onload="funonload();">
+    <!-- Шапка страницы -->
     <header class="content-wrapper" style="display: block;">
-            <div class="float-right">
-                <p class="site-title">
-                    <a><img src="images/weather.png" width="100" height="100" alt="Weather"/></a>
-                </p>
-            </div>
-            <div class="float-left">
-                    <h1>Weather Station</h1>
-                    <table>
-                        <td class="CurrentTD">
-                            Текущее время 
-                        </td>
-                        <td>
-                            <div class="CurrentTD" id="CurDateTime">время</div>
-                        </td>                        
-                    </table>    
-                    
-             </div>
+        <!-- Справа расположения картинка-->
+        <div class="float-right">
+            <p class="site-title">
+                <a><img src="images/weather.png" width="100" height="100" alt="Weather" /></a>
+            </p>
+        </div>
+        <!-- Слева располагаются название и текущие дата и время -->
+        <div class="float-left">
+            <!-- Название -->
+            <h1>Weather Station</h1>
+            <!-- Текущие время и дата -->
+            <table>
+                <td class="CurrentTD">Текущее время 
+                </td>
+                <td>
+                    <div class="CurrentTD" id="CurDateTime">время</div>
+                </td>
+            </table>
+        </div>
     </header>
+    <!-- Тело страницы -->
     <div id="body">
-    <div id="Tabs" style="display: block; ">
-        <ul>
-            <li id="li_tab1" onclick="onTick()"><a id="info" style="background:#fafff7">Текущие данные</a></li>
-            <li id="li_tab2" onclick="loadSettings()"><a id ="congig" style="background:#f1fefe">Конфигурация</a></li>
-            <li id="li_tab3" onclick="tab('tab3')"><a id ="contacts" style="background:#f6f3fc">Контакты</a></li>
-        </ul>
-        <div id="Content_Area">
-            <div id="tab1" style="display:none; background:#f5fcf2;" >  
-                <div id="Div1" style="margin-left: 3%">  
-                </div>
-            </div>
-            <div id="tab2" style="display: none; background:#f1fefe;">
-                <div id="Div2" style="width: 95%; height: 95%; margin-left: 3%; display: inline-block;">
-                </div>
-            </div>
-            <div id="tab3" style="display: none; background: #f6f3fc;">
-                <div style="display: inline-block; width: 95%; height: 95%; ">
-                    <div style="display: inline-block;  margin-left: 50px;">
-                        <span>
-                            <h3>Architect</h3>
-                            <a href="https://vk.com/id39891456" target="_blank">
-                            <img class="shine"src="Images/contact_k.png" alt="Чайка К.В."/></a><br/>
-                            <a href="mailto:pro100kot14@gmail.com">Чайка Константин</a>
-                        </span>
-
-                    </div>
-                    <div style="display: inline-block;  margin-left: 50px;">
-                        <span>
-                            <h3>Developer</h3>
-                            <a href="https://vk.com/vladspam" target="_blank">
-                                <img class="shine" src="Images/contact_v.png" width="140" height="150" alt="Дудов В.А." /></a><br />
-                            <a href="mailto:dudovlad@gmail.com">Дудов Владислав</a>
-                        </span>
-
-                    </div>
-                    <div style="display: inline-block;  margin-left: 50px;">
-                        <span>
-                            <h3>Tester</h3>
-                            <a href="https://vk.com/fahrenheit001" target="_blank">
-                            <img class="shine" src="Images/contact_i.png" width="140" height="150" alt="Вертилецкий И.А." /></a><br />
-                            <a href="mailto:vertileckii.ilya@gmail.com">Вертилецкий Илья</a>
-                        </span>
-
-                    </div>
-                    <div style="display: inline-block;  margin-left: 50px;">
-                        <span>
-                            <h3>Project manager</h3>
-                            <a href="https://vk.com/razmn" target="_blank">
-                            <img  class="shine" src="Images/contact_n.png" width="180" height="150" alt="Размочаева Н.В." /></a><br/>
-                            <a href="mailto:natalyrazzm@gmail.com">Размочаева Наталья</a>
-                        </span>
+        <!-- Разделение на вкладки  -->
+        <div id="Tabs" style="display: block;">
+            <ul>
+                <!-- Вкладка с текущими погодными данными -->
+                <li id="li_tab1" onclick="onTick()"><a id="info" style="background: #fafff7">Текущие данные</a></li>
+                <!-- Вкладка с настройками конфигурации -->
+                <li id="li_tab2" onclick="tab('tab2')"><a id="congig" style="background: #f1fefe">Конфигурация</a></li>
+                <!-- Вкладка с контактами -->
+                <li id="li_tab3" onclick="tab('tab3')"><a id="contacts" style="background: #f6f3fc">Контакты</a></li>
+            </ul>
+            <!-- Содержимое вкладок -->
+            <div id="Content_Area">
+                <!-- Вкладка "Текущие данные"
+                    Назначение вкладки: Отображение текущей информации о погоде -->
+                <div id="tab1" style="display: none; background: #f5fcf2;">
+                    <!-- Функция myFunction(response) заполняет этот блок при загрузке страницы -->
+                    <div id="Div1" style="margin-left: 3%">
                     </div>
                 </div>
+                <!-- Вкладка "Конфигурация"
+                    Назначение вкладки: Отображение раннее введенных параметров и занесение новых значений параметров -->
+                <div id="tab2" style="display: none; background: #f1fefe;">
+                    <div style="width: 95%; height: 95%; margin-left: 3%; display: inline-block;">
+                        <!-- Форма с кнопкой "Изменить" для отправки серверу новых значений параметров конфигурации -->
+                        <form action="SettingsHandler">
+                            <!-- Задание единиц измерения температуры (radio-button): Цельсии или Фаренгейты  -->
+                            <h3>Температурная шкала</h3>
+                            <div>
+                                <input id="TempScaleC" name="TempScale" type="radio" value="C" />Цельсии
+                            </div>
+                            <div>
+                                <input id="TempScaleF" name="TempScale" type="radio" value="F" />Фаренгейты
+                            </div>
+                            <!-- Задание значения интервала опроса датчика для получения погодных данных -->
+                            <h3>Интервал опроса датчика</h3>
+                            <div>
+                                <!-- Текстовое поле для ввода значения интервала в минутах  -->
+                                <input id="SensorInterval" required name="SensorInterval" type="text" size="5" />
+                                минут
+                            </div>
+                            <!--  Задание адреса NTP-сервера, который обеспечивает синхронизацию времени -->
+                            <h3>Адрес NTP сервера для синхронизации времени</h3>
+                            <div>
+                                <!-- Текстовое поле для ввода адреса NTP-сервера -->
+                                <input id="NTPServer" required name="NTPServer" type="text" size="25" />
+                            </div>
+                            <!-- Задание интервала сихронизации времени (интервала обращения к NTP-серверу) -->
+                            <h3>Интервал синхронизации времени</h3>
+                            <div>
+                                <!-- Текстовое поле для ввода значения интервала в часах  -->
+                                <input id="TimeInterval" required name="TimeInterval" type="text" size="5" />
+                                часов
+                            </div>
+                            <!-- Кнопка, по нажатию на которую все заданные параметры отправляются на сервер -->
+                            <input type="submit" class="butt" style="margin-top: 50px; margin-left: 70px; margin-bottom: 20px; width: 100px; height: 40px; border-radius: 12px; border: 3px solid #c8c8c8; font: 16px Tahoma, Geneva, sans-serif; font-weight: bold; color: #000000;" value="Изменить" />
+                        </form>
+                    </div>
+                </div>
+                <!-- Вкладка "Контактная информация" 
+                    Назначение: отображение контактов для обратной связи с разработчиками -->
+                <div id="tab3" style="display: none; background: #f6f3fc;">
+                    <!--  Отображение инфоормации по каждому участнику команды -->
+                    <div style="display: inline-block; width: 95%; height: 95%;">
+                        <!-- Информация об архитекторе -->
+                        <div style="display: inline-block; margin-left: 50px;">
+                            <span>
+                                <h3>Architect</h3>
+                                <a href="https://vk.com/id39891456" target="_blank">
+                                    <img class="shine" src="Images/contact_k.png" alt="Чайка К.В." /></a><br />
+                                <a href="mailto:pro100kot14@gmail.com">Чайка Константин</a>
+                            </span>
+                        </div>
+                        <!-- Информация о разработчике -->
+                        <div style="display: inline-block; margin-left: 50px;">
+                            <span>
+                                <h3>Developer</h3>
+                                <a href="https://vk.com/vladspam" target="_blank">
+                                    <img class="shine" src="Images/contact_v.png" width="140" height="150" alt="Дудов В.А." /></a><br />
+                                <a href="mailto:dudovlad@gmail.com">Дудов Владислав</a>
+                            </span>
+                        </div>
+                        <!-- Информация о тестировщике -->
+                        <div style="display: inline-block; margin-left: 50px;">
+                            <span>
+                                <h3>Tester</h3>
+                                <a href="https://vk.com/fahrenheit001" target="_blank">
+                                    <img class="shine" src="Images/contact_i.png" width="140" height="150" alt="Вертилецкий И.А." /></a><br />
+                                <a href="mailto:vertileckii.ilya@gmail.com">Вертилецкий Илья</a>
+                            </span>
+                        </div>
+                        <!-- Информация о менеджере проекта -->
+                        <div style="display: inline-block; margin-left: 50px;">
+                            <span>
+                                <h3>Project manager</h3>
+                                <a href="https://vk.com/razmn" target="_blank">
+                                    <img class="shine" src="Images/contact_n.png" width="180" height="150" alt="Размочаева Н.В." /></a><br />
+                                <a href="mailto:natalyrazzm@gmail.com">Размочаева Наталья</a>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
+            <!-- End of Content_Area Div -->
         </div>
-        <!-- End of Content_Area Div -->
+        <!-- End of Tabs Div -->
     </div>
-    <!-- End of Tabs Div -->
-        </div>
 </body>
 </html>

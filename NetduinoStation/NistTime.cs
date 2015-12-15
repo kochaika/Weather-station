@@ -8,17 +8,32 @@ using System.Net.Sockets;
 
 namespace NetduinoStation
 {
+	/**
+	* Позволяет получить текущее время с сервера синхронизации времени
+	*/
 	public class NistTime
 	{
+		/**
+		* По-умолчанию используется сервер с IP-адресом 132.163.4.101 (time-a.timefreq.bldrdoc.gov)
+		*/
 		public NistTime() : this(IPAddress.Parse("132.163.4.101"))
 		{
 		}
-
+	
+		/**
+		* Можно указатьь желаемый адрес сервера синхронизации времени
+		* <param name="timeServerIpAddress">IP-адорес сервера синхронизации времени</param>
+		*/
 		public NistTime(IPAddress timeServerIpAddress)
 		{
 			TimeServerIpAddress = timeServerIpAddress;
 		}
-
+		
+		/**
+		* Получить текущее время, полученное с сервера синхронизации времени
+		* <param name="utc">Позволяет задать смещение часового пояса. По-умолчанию = 0</param>
+		* <returns>Текущее время в виде объекта стандартного класса <c>DateTime</c></returns>
+		*/
 		public DateTime GetDateTime(int utc = 0)
 		{
 			string nistTime = QueryNistTime();
@@ -33,8 +48,11 @@ namespace NetduinoStation
 				return DateTime.Now;
 			}
 		}
-
-		bool SocketConnected(Socket socket)
+		
+		/**
+		* 
+		*/
+		private bool SocketConnected(Socket socket)
 		{
 			bool part1 = socket.Poll(1000, SelectMode.SelectRead);
 			bool part2 = (socket.Available == 0);
@@ -44,8 +62,14 @@ namespace NetduinoStation
 			else
 				return true;
 		}
-
-		string QueryNistTime()
+		
+		/**
+		* Запрашивает время и дату с сервера синхронизации времени. Получет ее в виде заданном NIST ACTS
+		* Формат строки: JJJJJ YR-MO-DA HH:MM:SS TT L DUT1 msADV UTC(NIST) OTM
+		* Подробнее: http://www.nist.gov/pml/div688/grp40/acts.cfm
+		* <returns>Строка с текущими временными настройками, полученными от сервера</returns>
+		*/
+		private string QueryNistTime()
 		{
 			using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
 			{
@@ -65,15 +89,21 @@ namespace NetduinoStation
 				return string.Empty;
 			}
 		}
-
+		
+		/**
+		* Разделитель строки, согласно которым ее требуется разбивать
+		*/
 		char[] separators = new char[] { ' ' };
-
-		CultureInfo EnglishUSACulture = new CultureInfo("en-US");
-
-		DateTime ParseNistAnswer(string timeString)
+		
+		/**
+		* Разбирает строку, содержащую дату и время в виде, определенном NIST ACTS.
+		* <param name="timeString">Строка, полученная от сервера синхронизации времени</param>
+		* <returns>Время, и дата полученные в качетсве параметра в виде объекта стандартного класса <c>DateTime</c></returns>
+		*/
+		private DateTime ParseNistAnswer(string timeString)
         {
             Debug.Print(timeString);
-            string[] resultTokensRaw = timeString.Split(separators/*, StringSplitOptions.RemoveEmptyEntries*/);
+            string[] resultTokensRaw = timeString.Split(separators);
             string[] resultTokens = new string[resultTokensRaw.Length];
             int j = 0;
             for (int i = 0; i < resultTokensRaw.Length; i++)
