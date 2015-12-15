@@ -87,33 +87,70 @@ namespace NetduinoStation
 		public short GetShadeTemperature()
 		{
 			_responsed = false;
-			SendRequest(RequestCodes.ShadeTemperature);
-			while (!_responsed);
-			return _response;
+			int i = 0;
+			while (!_responsed && i < 10)
+			{
+				SendRequest(RequestCodes.ShadeTemperature);
+				Thread.Sleep(1000);
+				i++;
+			}
+
+			if (_responsed)
+			{
+				return _response;
+			}
+			else
+			{
+				return 0;
+			}
 		}
 
 		public short GetLightTemperature()
 		{
 			_responsed = false;
-			SendRequest(RequestCodes.LightTemperature);
-			while (!_responsed);
-			return _response;
+			int i = 0;
+			while (!_responsed && i < 10) 
+			{
+				SendRequest(RequestCodes.LightTemperature);
+				Thread.Sleep(1000);
+				i++;
+			}
+
+			if (_responsed)
+			{
+				return _response;
+			}
+			else
+			{
+				return 0;
+			}
+			
 		}
 
 		public string GetIllumination()
 		{
 			_responsed = false;
-			SendRequest(RequestCodes.Light);
-			while (!_responsed);
-			
-			switch (_response)
+			int i = 0;
+
+
+			while (!_responsed && i < 10)
 			{
-				case (short)Illumination.Clear: return "Clear";
-				case (short)Illumination.Cloudly: return "Cloudly";
-				case (short)Illumination.Dark: return "Dark";
-				case (short)Illumination.VeryCloudly: return "VeryCloudly";
-				case (short)Illumination.VerySunny: return "VerySunny";
+				SendRequest(RequestCodes.Light);
+				Thread.Sleep(1000);
+				i++;
 			}
+
+			if (_responsed)
+			{
+				switch (_response)
+				{
+					case (short)Illumination.Clear: return "Clear";
+					case (short)Illumination.Cloudly: return "Cloudly";
+					case (short)Illumination.Dark: return "Dark";
+					case (short)Illumination.VeryCloudly: return "VeryCloudly";
+					case (short)Illumination.VerySunny: return "VerySunny";
+				}
+			}	
 
 			return string.Empty;
 		}

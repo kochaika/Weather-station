@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
-using Microsoft.SPOT;
 
 namespace NetduinoStation
 {
@@ -18,15 +17,21 @@ namespace NetduinoStation
 		public NistTime(IPAddress timeServerIpAddress)
 		{
 			TimeServerIpAddress = timeServerIpAddress;
-			//DateTime dt = GetDateTime(4);
 		}
 
 		public DateTime GetDateTime(int utc = 0)
 		{
 			string nistTime = QueryNistTime();
-			DateTime dateTime = ParseNistAnswer(nistTime);
-			dateTime = dateTime.AddHours(utc);
-			return dateTime;
+			if (!nistTime.Equals(string.Empty))
+			{
+				DateTime dateTime = ParseNistAnswer(nistTime);
+				dateTime = dateTime.AddHours(utc);
+				return dateTime;
+			}
+			else
+			{
+				return DateTime.Now;
+			}
 		}
 
 		bool SocketConnected(Socket socket)

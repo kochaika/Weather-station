@@ -15,7 +15,7 @@ namespace NetduinoStation
 		{
 			ShadeTemperature = 0;
 			LightTemperature = 0;
-			Scale = "C";
+			Scale = "c";
 			Illumination = "Cloudly";
 			DateTime = DateTime.Now;
 		}

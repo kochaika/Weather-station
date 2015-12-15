@@ -29,6 +29,7 @@ namespace NetduinoStation
 			NistServerAddress = "132.163.4.101";
 			nistTime = new NistTime(IPAddress.Parse(NistServerAddress));
 			wirelessTransmitter = new WirelessTransmitter();
+			wirelessTransmitter.Start();
 		}
 
 		public void Start()
@@ -44,8 +45,8 @@ namespace NetduinoStation
 
 			if (timerUpdateWeather == null)
 			{
-				//timerUpdateWeather = new Timer(callbackUpdateWeather, null, new TimeSpan(0, 0, 2),
-				//new TimeSpan(0, WeatherUpdateInterval, 0));
+				timerUpdateWeather = new Timer(callbackUpdateWeather, null, new TimeSpan(0, 0, 2),
+				new TimeSpan(0, WeatherUpdateInterval, 0));
 			}
 		}
 
@@ -84,11 +85,20 @@ namespace NetduinoStation
 			Debug.Print("Time has been just updated: " + DateTime.Now.ToString());
 		}
 
-		void UpdateWeather(Object state)
+		public void UpdateWeather(Object state)
 		{
 			WeatherInfo.DateTime = DateTime.Now;
-			WeatherInfo.ShadeTemperature = wirelessTransmitter.GetShadeTemperature();
-			WeatherInfo.LightTemperature = wirelessTransmitter.GetLightTemperature();
+			if (WeatherInfo.Scale.Equals("c"))
+			{
+				WeatherInfo.ShadeTemperature = (int)(wirelessTransmitter.GetShadeTemperature()/100);
+				WeatherInfo.LightTemperature = (int)(wirelessTransmitter.GetLightTemperature()/100);
+			}
+			else
+			{
+				WeatherInfo.ShadeTemperature = 32 + 9 * (int)(wirelessTransmitter.GetShadeTemperature()/100) / 5;
+				WeatherInfo.LightTemperature = 32 + 9 * (int)(wirelessTransmitter.GetLightTemperature()/100) / 5;
+			}
+			
 			WeatherInfo.Illumination = wirelessTransmitter.GetIllumination();
 			Debug.Print("Weather has just been updated...");
 		}

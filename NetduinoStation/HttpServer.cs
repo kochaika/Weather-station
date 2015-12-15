@@ -173,7 +173,7 @@ namespace NetduinoStation
 		}
 		string GetRequestParameter(string requestString, string parameterName)
 		{
-			string parameter = requestString.Substring(requestString.IndexOf("SensorInterval=") + "SensorInterval=".Length);
+			string parameter = requestString.Substring(requestString.IndexOf(parameterName) + parameterName.Length);
 			if (parameter.IndexOf("&") > 0){
 				return parameter.Substring(0, parameter.IndexOf("&"));
 			}
@@ -196,7 +196,7 @@ namespace NetduinoStation
 			string FILE_EXTENTION = "";
 			ACCEPTED_SOCKET.Receive(RECEIVE_BUFFER);
 			REQUEST = new string(UTF8Encoding.UTF8.GetChars(RECEIVE_BUFFER));
-			Debug.Print("\n     * * *\n" + REQUEST);
+			//Debug.Print("\n     * * *\n" + REQUEST);
 			FILES = Directory.GetFiles(STORAGE_PATH);
 			FILE_NAME = GetFileName(REQUEST).ToLower();
 			if (FILE_NAME.IndexOf("/") > 0)
@@ -213,7 +213,6 @@ namespace NetduinoStation
 			}
 			else if (FILE_NAME.Equals("weatherinfo.json"))
 			{
-				weatherInfo = updater.WeatherInfo;
 				Hashtable hashtable = new Hashtable();
 				hashtable.Add("Shade_temperature", weatherInfo.ShadeTemperature);
 				hashtable.Add("Light_temperature", weatherInfo.LightTemperature);
@@ -227,12 +226,14 @@ namespace NetduinoStation
 			}
 			else if (FILE_NAME.Equals("datetime.json"))
 			{
-				string json = JsonSerializer.SerializeObject(DateTime.Now);
+				Hashtable hashtable = new Hashtable();
+				hashtable.Add("DateTime", DateTime.Now - new TimeSpan(3,0,0));
+				string json = JsonSerializer.SerializeObject(hashtable);
 				Debug.Print(json);
 				byte[] response = UTF8Encoding.UTF8.GetBytes(HtmlPageHeader + "text/json;charset=UTF-8;\r\nContent-Length: " + UTF8Encoding.UTF8.GetBytes("[" + json + "]").Length + "\r\n\r\n" + "[" + json + "]");
 				ACCEPTED_SOCKET.Send(response, response.Length, 0);
 			}
-			else if (FILE_NAME.Equals("settings.json "))
+			else if (FILE_NAME.Equals("settings.json"))
 			{
 				Hashtable hashtable = new Hashtable();
 				hashtable.Add("TempScale", updater.WeatherInfo.Scale);
@@ -246,11 +247,12 @@ namespace NetduinoStation
 			}
 			else if (RequestContains(FILE_NAME, "settingshandler?"))
 			{
-				string nistServer = GetRequestParameter(FILE_NAME, "sensorinterval=");
+				string nistServer = GetRequestParameter(FILE_NAME, "ntpserver=");
 				string tempScale = GetRequestParameter(FILE_NAME, "tempscale=");
 				int weatherUpdateInterval = int.Parse(GetRequestParameter(FILE_NAME, "sensorinterval="));
 				int timeUpdateInterval = int.Parse(GetRequestParameter(FILE_NAME, "timeinterval="));
 				updater.UpdateConfiguration(timeUpdateInterval, weatherUpdateInterval, updater.WeatherInfo.Scale, nistServer);
+				FragmentateAndSend("index.html", FileType.Html);
 			}
 			else
 			{
@@ -369,7 +371,7 @@ namespace NetduinoStation
 			LISTEN_IP = NetworkInterface.GetAllNetworkInterfaces()[0].IPAddress;
 
 			updater = new Updater();
-			//updater.Start();
+			updater.Start();
 		}
 		/// <summary>
 		/// starts the server and listens to connections
@@ -406,7 +408,4 @@ namespace NetduinoStation
 		}
 	}
 }
-
-
-
 
